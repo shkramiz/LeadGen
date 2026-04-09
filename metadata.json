@@ -1,0 +1,7 @@
+{
+  "name": "LeadGen Maps Bot",
+  "description": "Automated lead generation tool that finds businesses on Google Maps without an online presence, helping marketing agencies target high-potential clients.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
