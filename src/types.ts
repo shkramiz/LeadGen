@@ -19,3 +19,13 @@ export interface SearchState {
   results: BusinessLead[];
   error: string | null;
 }
+
+export interface SavedSearch {
+  id: string;
+  category: string;
+  customCategory: string;
+  countryCode: string;
+  city: string;
+  name: string;
+  createdAt: number;
+}

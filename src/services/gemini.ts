@@ -55,10 +55,17 @@ export async function findLeads(keyword: string, location: string, excludeNames:
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
-        leads = parsed.map((item: any, index: number) => ({
-          ...item,
-          mapsUrl: mapsUrls[index]?.uri || `https://www.google.com/maps/search/${encodeURIComponent(item.name + " " + item.address)}`
-        }));
+        leads = parsed.map((item: any) => {
+          const matchedChunk = mapsUrls.find(chunk => 
+            chunk.title.toLowerCase().includes(item.name.toLowerCase()) || 
+            item.name.toLowerCase().includes(chunk.title.toLowerCase())
+          );
+          
+          return {
+            ...item,
+            mapsUrl: matchedChunk?.uri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + " " + item.address)}`
+          };
+        });
       } catch (e) {
         console.error("Failed to parse JSON from Gemini response", e);
       }

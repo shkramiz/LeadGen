@@ -1,119 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, MapPin, Download, Loader2, Globe, Phone, Star, ExternalLink, AlertCircle, CheckCircle2, XCircle, MoreHorizontal, Copy, PhoneCall, Share2, ArrowUpDown, ChevronDown, Mail, MessageCircle, X, Settings, Filter, Shield, Zap, Sliders } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Search, MapPin, Download, Loader2, Globe, Phone, Star, ExternalLink, AlertCircle, CheckCircle2, XCircle, MoreHorizontal, Copy, PhoneCall, Share2, ArrowUpDown, ChevronDown, Mail, MessageCircle, X, Settings, Filter, Shield, Zap, Sliders, Moon, Sun, Menu, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { findLeads } from './services/gemini';
-import { BusinessLead } from './types';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { BusinessLead, SavedSearch } from './types';
 import { Country, City } from 'country-state-city';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-const CATEGORIES = [
-  'Accounting',
-  'Advertising Agency',
-  'Architecture',
-  'Art Gallery',
-  'Auto Repair',
-  'Bakery',
-  'Bank',
-  'Bar',
-  'Barber Shop',
-  'Beauty Salon',
-  'Bicycle Shop',
-  'Bookstore',
-  'Cafe',
-  'Car Dealer',
-  'Car Rental',
-  'Catering',
-  'Cleaning Service',
-  'Clothing Store',
-  'Coffee Shop',
-  'Construction',
-  'Consulting',
-  'Co-working Space',
-  'Day Care',
-  'Dentist',
-  'Digital Marketing',
-  'Dry Cleaning',
-  'Electrician',
-  'Electronics Store',
-  'Event Planning',
-  'Financial Advisor',
-  'Fitness Center',
-  'Florist',
-  'Furniture Store',
-  'Gas Station',
-  'Graphic Design',
-  'Grocery Store',
-  'Gym',
-  'Hair Salon',
-  'Hardware Store',
-  'Hospital',
-  'Hotel',
-  'Insurance Agency',
-  'Interior Design',
-  'IT Services',
-  'Jewelry Store',
-  'Landscaping',
-  'Laundry',
-  'Lawyer',
-  'Library',
-  'Locksmith',
-  'Marketing Agency',
-  'Massage Therapy',
-  'Medical Clinic',
-  'Moving Company',
-  'Music School',
-  'Nail Salon',
-  'Night Club',
-  'Optician',
-  'Painting Service',
-  'Pet Shop',
-  'Pharmacy',
-  'Photography',
-  'Physiotherapy',
-  'Plumber',
-  'Printing Service',
-  'Psychologist',
-  'Real Estate',
-  'Recruitment Agency',
-  'Restaurant',
-  'Roofing',
-  'School',
-  'Security Service',
-  'Software Company',
-  'Solar Energy',
-  'Spa',
-  'Sports Club',
-  'Supermarket',
-  'Tailor',
-  'Tattoo Studio',
-  'Taxi Service',
-  'Travel Agency',
-  'Tutoring',
-  'Veterinary Clinic',
-  'Web Design',
-  'Wedding Planning',
-  'Yoga Studio',
-];
+import { cn } from './lib/utils';
+import { CATEGORIES } from './constants';
+import { CustomSelect } from './components/ui/CustomSelect';
+import { WhatsAppIcon } from './components/icons';
 
 type SortOption = 'rating' | 'reviews' | 'name' | 'none';
-
-const WhatsAppIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-  </svg>
-);
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -127,8 +23,16 @@ export default function App() {
   const [sortBy, setSortBy] = useState<SortOption>('none');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(() => {
+    const saved = localStorage.getItem('leadgen_saved_searches');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [settings, setSettings] = useState({
     excludeWithWebsites: false,
+    requireEmail: false,
     minRating: 0,
     minReviews: 0,
     resultsLimit: 20,
@@ -147,6 +51,57 @@ export default function App() {
   useEffect(() => {
     setSelectedCity('');
   }, [selectedCountryCode]);
+
+  useEffect(() => {
+    localStorage.setItem('leadgen_saved_searches', JSON.stringify(savedSearches));
+  }, [savedSearches]);
+
+  const handleSaveSearch = () => {
+    if (!selectedCategory || !selectedCountryCode) return;
+    
+    // Check if already exists (same category, country, city)
+    const exists = savedSearches.some(s => 
+      s.category === selectedCategory && 
+      s.customCategory === customCategory && 
+      s.countryCode === selectedCountryCode && 
+      s.city === selectedCity
+    );
+    if (exists) return;
+
+    const newSearch: SavedSearch = {
+      id: Math.random().toString(36).substring(2, 9),
+      category: selectedCategory,
+      customCategory,
+      countryCode: selectedCountryCode,
+      city: selectedCity,
+      name: `${finalKeyword} in ${finalLocation}`,
+      createdAt: Date.now()
+    };
+    
+    setSavedSearches([newSearch, ...savedSearches]);
+  };
+
+  const handleLoadSearch = (search: SavedSearch) => {
+    setSelectedCategory(search.category);
+    setCustomCategory(search.customCategory);
+    setSelectedCountryCode(search.countryCode);
+    setTimeout(() => {
+      setSelectedCity(search.city);
+    }, 0);
+  };
+
+  const handleDeleteSearch = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavedSearches(savedSearches.filter(s => s.id !== id));
+  };
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   const sortedResults = useMemo(() => {
     if (sortBy === 'none') return results;
@@ -172,6 +127,9 @@ export default function App() {
       // Apply Settings Filters
       if (settings.excludeWithWebsites) {
         leads = leads.filter(l => !l.hasWebsite);
+      }
+      if (settings.requireEmail) {
+        leads = leads.filter(l => !!l.email);
       }
       if (settings.minRating > 0) {
         leads = leads.filter(l => (l.rating || 0) >= settings.minRating);
@@ -204,6 +162,9 @@ export default function App() {
       // Apply Settings Filters
       if (settings.excludeWithWebsites) {
         moreLeads = moreLeads.filter(l => !l.hasWebsite);
+      }
+      if (settings.requireEmail) {
+        moreLeads = moreLeads.filter(l => !!l.email);
       }
       if (settings.minRating > 0) {
         moreLeads = moreLeads.filter(l => (l.rating || 0) >= settings.minRating);
@@ -262,7 +223,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-netflix-black text-white font-sans selection:bg-netflix-red selection:text-white" onClick={() => setActiveMenu(null)}>
+    <div className="min-h-screen bg-[color:var(--bg-primary)] text-[color:var(--text-primary)] font-sans selection:bg-netflix-red selection:text-[#FFFFFF]" onClick={() => setActiveMenu(null)}>
       {/* Background Gradient */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-netflix-red/10 via-transparent to-transparent opacity-30" />
@@ -270,19 +231,19 @@ export default function App() {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-netflix-black/60 backdrop-blur-xl border-b border-white/5">
+      <header className="sticky top-0 z-50 bg-[color:var(--bg-primary)]/80 backdrop-blur-xl border-b border-[color:var(--glass-border)] transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-netflix-red rounded-lg flex items-center justify-center text-white shadow-lg shadow-netflix-red/40">
+            <div className="w-10 h-10 bg-netflix-red rounded-lg flex items-center justify-center text-[#FFFFFF] shadow-lg shadow-netflix-red/40">
               <MapPin size={22} strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-2xl font-black tracking-tighter text-white leading-none font-display">LEAD<span className="text-netflix-red">GEN</span></h1>
-              <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em] mt-1">Maps Intelligence</p>
+              <h1 className="text-2xl font-black tracking-tighter text-[color:var(--text-primary)] leading-none font-display">LEAD<span className="text-netflix-red">GEN</span></h1>
+              <p className="text-[9px] font-bold text-[color:var(--text-secondary)] uppercase tracking-[0.3em] mt-1">Maps Intelligence</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-8">
-            <nav className="flex items-center gap-6 text-sm font-bold text-white/60">
+          <div className="hidden md:flex items-center gap-8">
+            <nav className="flex items-center gap-6 text-sm font-bold text-[color:var(--text-secondary)]">
               <a href="#" className="hover:text-netflix-red transition-colors uppercase tracking-widest text-[11px]">Dashboard</a>
               <a href="#" className="hover:text-netflix-red transition-colors uppercase tracking-widest text-[11px]">History</a>
               <button 
@@ -292,46 +253,104 @@ export default function App() {
                 Settings
               </button>
             </nav>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
+            <div className="h-4 w-px bg-[color:var(--glass-border)]" />
+            <div className="text-[10px] font-mono text-[color:var(--text-secondary)] uppercase tracking-widest">
               v1.0.5
             </div>
           </div>
+          
+          <button 
+            className="md:hidden p-2 text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu size={24} />
+          </button>
         </div>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-[100] flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="relative w-64 h-full bg-[color:var(--bg-secondary)] border-l border-[color:var(--glass-border)] shadow-2xl flex flex-col"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 glossy-gradient" />
+              <div className="p-6 flex items-center justify-between border-b border-[color:var(--glass-border)]">
+                <span className="text-lg font-black tracking-tighter text-[color:var(--text-primary)] font-display uppercase">Menu</span>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 -mr-2 text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors rounded-lg hover:bg-[color:var(--btn-ghost-hover)]"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <nav className="flex flex-col gap-2 p-4 flex-1">
+                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-bold text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--glass-bg)] transition-colors uppercase tracking-widest">
+                  Dashboard
+                </a>
+                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-bold text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--glass-bg)] transition-colors uppercase tracking-widest">
+                  History
+                </a>
+                <button 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setShowSettings(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-[13px] font-bold text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--glass-bg)] transition-colors uppercase tracking-widest text-left"
+                >
+                  Settings
+                </button>
+              </nav>
+              <div className="p-6 border-t border-[color:var(--glass-border)]">
+                <div className="text-[10px] font-mono text-[color:var(--text-secondary)] uppercase tracking-widest text-center">
+                  v1.0.5
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8 md:py-12">
         {/* Hero Section */}
-        <div className="mb-16 max-w-3xl">
-          <h2 className="text-5xl font-black tracking-tighter text-white mb-6 sm:text-7xl font-display leading-[0.9]">
+        <div className="mb-12 md:mb-16 max-w-3xl">
+          <h2 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tighter text-[color:var(--text-primary)] mb-4 md:mb-6 font-display leading-[1.1] md:leading-[0.9]">
             Find high-intent leads <span className="text-netflix-red">instantly.</span>
           </h2>
-          <p className="text-xl text-white/60 leading-relaxed font-medium max-w-xl">
+          <p className="text-lg md:text-xl text-[color:var(--text-secondary)] leading-relaxed font-medium max-w-xl">
             Extract business data from Google Maps to power your agency's outreach. 
             Identify businesses without websites and start scaling today.
           </p>
         </div>
 
         {/* Search Controls */}
-        <section className="glass-card p-10 mb-16 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 glossy-gradient" />
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <div className="md:col-span-3 space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Business Category</label>
+        <section className="glass-card p-6 md:p-10 mb-12 md:mb-16 relative">
+          <div className="absolute top-0 left-0 w-full h-1 glossy-gradient rounded-t-2xl" />
+          <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8">
+            <div className="lg:col-span-3 space-y-2 lg:space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1">Business Category</label>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={18} />
-                <select
+                <CustomSelect
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="glass-input pl-12 appearance-none cursor-pointer font-bold"
-                  required
-                >
-                  <option value="" disabled className="bg-netflix-dark">Select Category</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat} className="bg-netflix-dark">{cat}</option>
-                  ))}
-                  <option value="Custom" className="bg-netflix-dark">Custom...</option>
-                </select>
+                  onChange={setSelectedCategory}
+                  placeholder="Select Category"
+                  options={[
+                    ...CATEGORIES.map(cat => ({ value: cat, label: cat })),
+                    { value: "Custom", label: "Custom..." }
+                  ]}
+                />
                 {selectedCategory === 'Custom' && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -352,43 +371,35 @@ export default function App() {
               </div>
             </div>
 
-            <div className="md:col-span-3 space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">Country</label>
+            <div className="lg:col-span-3 space-y-2 lg:space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1">Country</label>
               <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={18} />
-                <select
+                <CustomSelect
                   value={selectedCountryCode}
-                  onChange={(e) => setSelectedCountryCode(e.target.value)}
-                  className="glass-input pl-12 appearance-none cursor-pointer font-bold"
-                  required
-                >
-                  <option value="" disabled className="bg-netflix-dark">Select Country</option>
-                  {countries.map((c) => (
-                    <option key={c.isoCode} value={c.isoCode} className="bg-netflix-dark">{c.name}</option>
-                  ))}
-                </select>
+                  onChange={setSelectedCountryCode}
+                  placeholder="Select Country"
+                  options={countries.map(c => ({ value: c.isoCode, label: c.name }))}
+                />
               </div>
             </div>
 
-            <div className="md:col-span-3 space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1">City</label>
+            <div className="lg:col-span-3 space-y-2 lg:space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1">City</label>
               <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" size={18} />
-                <select
+                <CustomSelect
                   value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="glass-input pl-12 appearance-none cursor-pointer font-bold disabled:opacity-30"
+                  onChange={setSelectedCity}
+                  placeholder={selectedCountryCode ? 'All Cities (Optional)' : 'Select Country First'}
                   disabled={!selectedCountryCode}
-                >
-                  <option value="" className="bg-netflix-dark">{selectedCountryCode ? 'All Cities (Optional)' : 'Select Country First'}</option>
-                  {cities.map((city, index) => (
-                    <option key={`${city.name}-${city.stateCode}-${index}`} value={city.name} className="bg-netflix-dark">{city.name}</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: selectedCountryCode ? 'All Cities (Optional)' : 'Select Country First' },
+                    ...cities.map(city => ({ value: city.name, label: city.name }))
+                  ]}
+                />
               </div>
             </div>
 
-            <div className="md:col-span-3 flex items-end pb-0.5">
+            <div className="lg:col-span-3 flex items-end sm:mt-2 lg:mt-0">
               <button
                 type="submit"
                 disabled={isSearching}
@@ -408,13 +419,47 @@ export default function App() {
               </button>
             </div>
           </form>
+
+          {/* Saved Searches */}
+          <div className="mt-8 pt-6 border-t border-[color:var(--glass-border)] flex flex-wrap items-center gap-4">
+            <button
+              onClick={handleSaveSearch}
+              disabled={!selectedCategory || !selectedCountryCode || isSearching}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[color:var(--glass-bg)] border border-[color:var(--glass-border)] text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-[color:var(--btn-ghost-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Bookmark size={16} className="text-netflix-red" />
+              Save Current Search
+            </button>
+
+            {savedSearches.length > 0 && (
+              <div className="w-px h-6 bg-[color:var(--glass-border)] mx-2 hidden sm:block" />
+            )}
+
+            {savedSearches.map(search => (
+              <div 
+                key={search.id}
+                onClick={() => handleLoadSearch(search)}
+                className="group flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] cursor-pointer hover:border-netflix-red/50 transition-all shadow-lg"
+              >
+                <Search size={14} className="text-[color:var(--text-secondary)] group-hover:text-netflix-red transition-colors" />
+                <span className="text-[color:var(--text-primary)]">{search.name}</span>
+                <button 
+                  onClick={(e) => handleDeleteSearch(search.id, e)}
+                  className="ml-2 p-1 rounded-full hover:bg-[color:var(--btn-ghost-hover)] text-[color:var(--text-secondary)] hover:text-netflix-red transition-colors"
+                  aria-label="Delete saved search"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Results Section */}
         <div className="space-y-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <h2 className="text-3xl font-black tracking-tight text-white font-display">
+              <h2 className="text-2xl md:text-3xl font-black tracking-tight text-[color:var(--text-primary)] font-display">
                 Discovery
               </h2>
               {results.length > 0 && (
@@ -427,19 +472,19 @@ export default function App() {
             {results.length > 0 && (
               <div className="flex items-center gap-4">
                 <div className="relative group">
-                  <div className="flex items-center gap-3 bg-white/5 px-5 py-2.5 rounded-lg border border-white/10 shadow-xl text-[11px] font-black uppercase tracking-widest text-white/70 cursor-pointer hover:bg-white/10 transition-all">
+                  <div className="flex items-center gap-3 bg-[color:var(--glass-bg)] px-5 py-2.5 rounded-lg border border-[color:var(--glass-border)] shadow-xl text-[11px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] cursor-pointer hover:bg-[color:var(--btn-ghost-hover)] transition-all">
                     <ArrowUpDown size={14} className="text-netflix-red" />
                     <span>Sort: {sortBy === 'none' ? 'Default' : sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}</span>
                     <ChevronDown size={14} />
                   </div>
-                  <div className="absolute right-0 top-full mt-2 w-44 bg-netflix-gray border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden py-1">
+                  <div className="absolute right-0 top-full mt-2 w-44 bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 overflow-hidden py-1">
                     {(['none', 'rating', 'reviews', 'name'] as SortOption[]).map(option => (
                       <button
                         key={option}
                         onClick={() => setSortBy(option)}
                         className={cn(
                           "w-full text-left px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
-                          sortBy === option ? "bg-netflix-red text-white" : "text-white/50 hover:bg-white/5 hover:text-white"
+                          sortBy === option ? "bg-netflix-red text-[#FFFFFF]" : "text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)]"
                         )}
                       >
                         {option === 'none' ? 'Default' : option}
@@ -449,7 +494,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={downloadCSV}
-                  className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-white/70 hover:text-white transition-all bg-white/5 px-5 py-2.5 rounded-lg border border-white/10 shadow-xl hover:bg-white/10"
+                  className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-all bg-[color:var(--glass-bg)] px-5 py-2.5 rounded-lg border border-[color:var(--glass-border)] shadow-xl hover:bg-[color:var(--btn-ghost-hover)]"
                 >
                   <Download size={16} className="text-netflix-red" />
                   Export CSV
@@ -511,10 +556,10 @@ export default function App() {
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                      className="group glass-card p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-500 relative overflow-hidden netflix-shadow"
+                      className="group glass-card p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-500 relative netflix-shadow"
                     >
                       {/* Glossy Overlay */}
-                      <div className="absolute top-0 left-0 w-full h-1 glossy-gradient opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute top-0 left-0 w-full h-1 glossy-gradient rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       
                       <div className="relative z-10">
                         <div className="flex justify-between items-start mb-8">
@@ -524,8 +569,8 @@ export default function App() {
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/5">
                               <Star size={12} fill="#E50914" className="text-netflix-red" />
-                              <span className="text-[11px] font-black text-white font-mono">{lead.rating || 'N/A'}</span>
-                              <span className="text-white/30 text-[10px] font-bold">({lead.reviewsCount || 0})</span>
+                                <span className="text-[11px] font-black text-[color:var(--text-primary)] font-mono">{lead.rating || 'N/A'}</span>
+                              <span className="text-[color:var(--text-secondary)] text-[10px] font-bold">({lead.reviewsCount || 0})</span>
                             </div>
                             <div className="relative">
                               <button 
@@ -533,7 +578,7 @@ export default function App() {
                                   e.stopPropagation();
                                   setActiveMenu(activeMenu === idx ? null : idx);
                                 }}
-                                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+                                className="p-2 hover:bg-[color:var(--btn-ghost-hover)] rounded-lg transition-colors text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
                               >
                                 <MoreHorizontal size={20} />
                               </button>
@@ -543,11 +588,11 @@ export default function App() {
                                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                    className="absolute right-0 top-full mt-3 w-52 bg-netflix-gray border border-white/10 rounded-xl shadow-2xl z-30 overflow-hidden py-2"
+                                    className="absolute right-0 top-full mt-3 w-52 bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-xl shadow-2xl z-30 overflow-hidden py-2"
                                   >
                                     <button 
                                       onClick={() => copyToClipboard(`${lead.name}\n${lead.address}\nPhone: ${lead.phone || 'N/A'}\nEmail: ${lead.email || 'N/A'}\nWhatsApp: ${lead.whatsapp || 'N/A'}`)}
-                                      className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white flex items-center gap-4 transition-colors"
+                                      className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)] flex items-center gap-4 transition-colors"
                                     >
                                       <Copy size={14} className="text-netflix-red" />
                                       Copy Details
@@ -555,7 +600,7 @@ export default function App() {
                                     {lead.phone && (
                                       <a 
                                         href={`tel:${lead.phone}`}
-                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white flex items-center gap-4 transition-colors"
+                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)] flex items-center gap-4 transition-colors"
                                       >
                                         <PhoneCall size={14} className="text-netflix-red" />
                                         Call Business
@@ -564,7 +609,7 @@ export default function App() {
                                     {lead.email && (
                                       <a 
                                         href={`mailto:${lead.email}`}
-                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white flex items-center gap-4 transition-colors"
+                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)] flex items-center gap-4 transition-colors"
                                       >
                                         <Mail size={14} className="text-netflix-red" />
                                         Email Business
@@ -575,7 +620,7 @@ export default function App() {
                                         href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white flex items-center gap-4 transition-colors"
+                                        className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)] flex items-center gap-4 transition-colors"
                                       >
                                         <WhatsAppIcon size={14} className="text-emerald-500" />
                                         WhatsApp
@@ -583,7 +628,7 @@ export default function App() {
                                     )}
                                     <button 
                                       onClick={() => copyToClipboard(lead.mapsUrl)}
-                                      className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/5 hover:text-white flex items-center gap-4 transition-colors"
+                                      className="w-full px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest text-[color:var(--text-secondary)] hover:bg-[color:var(--glass-bg)] hover:text-[color:var(--text-primary)] flex items-center gap-4 transition-colors"
                                     >
                                       <Share2 size={14} className="text-netflix-red" />
                                       Share Maps Link
@@ -595,17 +640,17 @@ export default function App() {
                           </div>
                         </div>
                         
-                        <h3 className="font-black text-2xl mb-4 text-white group-hover:text-netflix-red transition-colors leading-tight font-display">
+                        <h3 className="font-black text-xl md:text-2xl mb-4 text-[color:var(--text-primary)] group-hover:text-netflix-red transition-colors leading-tight font-display">
                           {lead.name}
                         </h3>
                         
                         <div className="space-y-4 mb-10">
-                          <div className="flex items-start gap-4 text-white/50">
+                          <div className="flex items-start gap-4 text-[color:var(--text-secondary)]">
                             <MapPin size={18} className="shrink-0 mt-0.5 text-netflix-red/60" />
                             <p className="text-sm leading-relaxed line-clamp-2 font-medium">{lead.address}</p>
                           </div>
                           {lead.phone && (
-                            <div className="flex items-center gap-4 text-white/50">
+                            <div className="flex items-center gap-4 text-[color:var(--text-secondary)]">
                               <Phone size={18} className="shrink-0 text-netflix-red/60" />
                               <p className="text-sm font-mono font-bold tracking-tight">{lead.phone}</p>
                             </div>
@@ -613,7 +658,7 @@ export default function App() {
                           {lead.email && (
                             <a 
                               href={`mailto:${lead.email}`}
-                              className="flex items-center gap-4 text-white/50 hover:text-white transition-colors group/link"
+                              className="flex items-center gap-4 text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] transition-colors group/link"
                             >
                               <Mail size={18} className="shrink-0 text-netflix-red/60 group-hover/link:text-netflix-red" />
                               <p className="text-sm font-bold truncate">{lead.email}</p>
@@ -632,10 +677,10 @@ export default function App() {
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                        <div className="flex items-center justify-between pt-8 border-t border-[color:var(--glass-border)]">
                           <div className="flex items-center gap-2">
                             {lead.hasWebsite ? (
-                              <div className="flex items-center gap-1.5 text-white/30 bg-white/5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/5">
+                              <div className="flex items-center gap-1.5 text-[color:var(--text-secondary)] bg-[color:var(--glass-bg)] px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-[color:var(--glass-border)]">
                                 <Globe size={12} />
                                 Website Found
                               </div>
@@ -650,7 +695,7 @@ export default function App() {
                             href={lead.mapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-10 h-10 flex items-center justify-center text-white/40 hover:text-netflix-red hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10"
+                            className="w-10 h-10 flex items-center justify-center text-[color:var(--text-secondary)] hover:text-netflix-red hover:bg-[color:var(--glass-bg)] rounded-xl transition-all border border-transparent hover:border-[color:var(--glass-border)]"
                             title="View on Google Maps"
                           >
                             <ExternalLink size={18} />
@@ -686,13 +731,13 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="glass-card p-24 text-center border-white/5"
+                className="glass-card p-12 md:p-24 text-center border-[color:var(--glass-border)]"
               >
-                <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 border border-white/10 shadow-2xl">
-                  <Search className="text-white/20" size={40} strokeWidth={1.5} />
+                <div className="w-20 h-20 md:w-24 md:h-24 bg-[color:var(--glass-bg)] rounded-full flex items-center justify-center mx-auto mb-6 md:mb-8 border border-[color:var(--glass-border)] shadow-2xl">
+                  <Search className="text-[color:var(--text-secondary)] opacity-50" size={32} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-3xl font-black text-white mb-4 font-display">Ready to find leads?</h3>
-                <p className="text-white/40 max-w-sm mx-auto font-medium text-lg">
+                <h3 className="text-2xl md:text-3xl font-black text-[color:var(--text-primary)] mb-4 font-display">Ready to find leads?</h3>
+                <p className="text-[color:var(--text-secondary)] max-w-sm mx-auto font-medium text-base md:text-lg">
                   Select a category and location above to start generating high-quality business leads.
                 </p>
               </motion.div>
@@ -702,21 +747,21 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-20 bg-netflix-black relative z-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-12">
-          <div className="flex items-center gap-4 opacity-40 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-              <MapPin size={20} />
+      <footer className="border-t border-[color:var(--glass-border)] py-12 md:py-20 relative z-10 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 md:gap-12">
+          <div className="flex items-center gap-4 opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+            <div className="w-10 h-10 bg-[color:var(--glass-bg)] rounded-xl flex items-center justify-center">
+              <MapPin size={20} className="text-netflix-red" />
             </div>
-            <span className="text-xl font-black tracking-tighter font-display uppercase">LEADGEN</span>
+            <span className="text-xl font-black tracking-tighter text-[color:var(--text-primary)] font-display uppercase">LEAD<span className="text-netflix-red">GEN</span></span>
           </div>
-          <div className="flex gap-10 text-[10px] font-black uppercase tracking-[0.3em] text-white/30">
+          <div className="flex flex-wrap justify-center md:justify-end gap-6 md:gap-10 text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--text-secondary)]">
             <a href="#" className="hover:text-netflix-red transition-colors">Privacy</a>
             <a href="#" className="hover:text-netflix-red transition-colors">Terms</a>
             <a href="#" className="hover:text-netflix-red transition-colors">API Docs</a>
             <a href="#" className="hover:text-netflix-red transition-colors">Support</a>
           </div>
-          <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest">
+          <p className="text-[10px] font-mono text-[color:var(--text-secondary)] uppercase tracking-widest text-center md:text-left">
             © 2026 LeadGen Intelligence. All rights reserved.
           </p>
         </div>
@@ -724,58 +769,58 @@ export default function App() {
       {/* Settings Modal */}
       <AnimatePresence>
         {showSettings && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowSettings(false)}
-              className="absolute inset-0 bg-netflix-black/80 backdrop-blur-md"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-xl glass-card overflow-hidden netflix-shadow border-white/10"
+              className="relative w-full max-w-xl max-h-[90vh] flex flex-col bg-[color:var(--bg-secondary)] border border-[color:var(--glass-border)] rounded-2xl netflix-shadow"
             >
-              <div className="absolute top-0 left-0 w-full h-1 glossy-gradient" />
+              <div className="absolute top-0 left-0 w-full h-1 glossy-gradient rounded-t-2xl" />
               
-              <div className="p-8">
+              <div className="p-6 md:p-8 overflow-y-visible flex-1">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-netflix-red/10 rounded-xl flex items-center justify-center text-netflix-red border border-netflix-red/20">
-                      <Settings size={24} />
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-netflix-red/10 rounded-xl flex items-center justify-center text-netflix-red border border-netflix-red/20">
+                      <Settings size={22} className="md:w-6 md:h-6" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white font-display">Search Settings</h3>
-                      <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-1">Configure your lead filters</p>
+                      <h3 className="text-xl md:text-2xl font-black text-[color:var(--text-primary)] font-display">Search Settings</h3>
+                      <p className="text-[color:var(--text-secondary)] text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1">Configure your lead filters</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => setShowSettings(false)}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+                    className="p-2 hover:bg-[color:var(--btn-ghost-hover)] rounded-lg transition-colors text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
                   >
                     <X size={24} />
                   </button>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-4">
                   {/* Filter: No Website */}
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all group">
+                  <div className="flex items-center justify-between p-4 bg-[color:var(--glass-bg)] rounded-2xl border border-[color:var(--glass-border)] hover:border-netflix-red/30 transition-all group">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-white/40 group-hover:text-netflix-red transition-colors">
-                        <Globe size={20} />
+                      <div className="w-10 h-10 bg-[color:var(--glass-bg)] rounded-lg flex items-center justify-center text-[color:var(--text-secondary)] group-hover:text-netflix-red transition-colors border border-[color:var(--glass-border)]">
+                        <Globe size={18} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">Exclude Businesses with Websites</p>
-                        <p className="text-xs text-white/40 font-medium">Only show leads that need a new website</p>
+                        <p className="text-sm font-bold text-[color:var(--text-primary)]">Exclude Businesses with Websites</p>
+                        <p className="text-[11px] md:text-xs text-[color:var(--text-secondary)] font-medium">Only show leads that need a new website</p>
                       </div>
                     </div>
                     <button
                       onClick={() => setSettings(s => ({ ...s, excludeWithWebsites: !s.excludeWithWebsites }))}
                       className={cn(
-                        "w-12 h-6 rounded-full transition-all relative",
-                        settings.excludeWithWebsites ? "bg-netflix-red" : "bg-white/10"
+                        "w-12 h-6 rounded-full transition-all relative shrink-0",
+                        settings.excludeWithWebsites ? "bg-netflix-red" : "bg-[color:var(--glass-border)]"
                       )}
                     >
                       <motion.div 
@@ -785,46 +830,77 @@ export default function App() {
                     </button>
                   </div>
 
+                  {/* Filter: Require Email */}
+                  <div className="flex items-center justify-between p-4 bg-[color:var(--glass-bg)] rounded-2xl border border-[color:var(--glass-border)] hover:border-netflix-red/30 transition-all group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-[color:var(--glass-bg)] rounded-lg flex items-center justify-center text-[color:var(--text-secondary)] group-hover:text-netflix-red transition-colors border border-[color:var(--glass-border)]">
+                        <Mail size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[color:var(--text-primary)]">Require Email Contact</p>
+                        <p className="text-[11px] md:text-xs text-[color:var(--text-secondary)] font-medium">Only show leads that have a public email address</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSettings(s => ({ ...s, requireEmail: !s.requireEmail }))}
+                      className={cn(
+                        "w-12 h-6 rounded-full transition-all relative shrink-0",
+                        settings.requireEmail ? "bg-netflix-red" : "bg-[color:var(--glass-border)]"
+                      )}
+                    >
+                      <motion.div 
+                        animate={{ x: settings.requireEmail ? 24 : 4 }}
+                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-6 md:space-y-8 mt-6 md:mt-8">
                   {/* Quality Thresholds */}
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1 flex items-center gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1 flex items-center gap-2">
                         <Star size={12} className="text-amber-500" />
                         Min Rating
                       </label>
-                      <select
-                        value={settings.minRating}
-                        onChange={(e) => setSettings(s => ({ ...s, minRating: Number(e.target.value) }))}
-                        className="glass-input text-xs font-bold"
-                      >
-                        <option value={0} className="bg-netflix-dark">Any Rating</option>
-                        <option value={3} className="bg-netflix-dark">3.0+ Stars</option>
-                        <option value={4} className="bg-netflix-dark">4.0+ Stars</option>
-                        <option value={4.5} className="bg-netflix-dark">4.5+ Stars</option>
-                      </select>
+                      <CustomSelect
+                        value={String(settings.minRating)}
+                        onChange={(val) => setSettings(s => ({ ...s, minRating: Number(val) }))}
+                        placeholder="Any Rating"
+                        className="text-xs"
+                        options={[
+                          { value: "0", label: "Any Rating" },
+                          { value: "3", label: "3.0+ Stars" },
+                          { value: "4", label: "4.0+ Stars" },
+                          { value: "4.5", label: "4.5+ Stars" }
+                        ]}
+                      />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1 flex items-center gap-2">
+                    <div className="space-y-2 md:space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1 flex items-center gap-2">
                         <MessageCircle size={12} className="text-netflix-red" />
                         Min Reviews
                       </label>
-                      <select
-                        value={settings.minReviews}
-                        onChange={(e) => setSettings(s => ({ ...s, minReviews: Number(e.target.value) }))}
-                        className="glass-input text-xs font-bold"
-                      >
-                        <option value={0} className="bg-netflix-dark">Any Reviews</option>
-                        <option value={10} className="bg-netflix-dark">10+ Reviews</option>
-                        <option value={50} className="bg-netflix-dark">50+ Reviews</option>
-                        <option value={100} className="bg-netflix-dark">100+ Reviews</option>
-                      </select>
+                      <CustomSelect
+                        value={String(settings.minReviews)}
+                        onChange={(val) => setSettings(s => ({ ...s, minReviews: Number(val) }))}
+                        placeholder="Any Reviews"
+                        className="text-xs"
+                        options={[
+                          { value: "0", label: "Any Reviews" },
+                          { value: "10", label: "10+ Reviews" },
+                          { value: "50", label: "50+ Reviews" },
+                          { value: "100", label: "100+ Reviews" }
+                        ]}
+                      />
                     </div>
                   </div>
 
                   {/* Results Limit */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 ml-1 flex items-center gap-2">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--text-secondary)] ml-1 flex items-center gap-2">
                         <Zap size={12} className="text-blue-400" />
                         Leads per Search
                       </label>
@@ -837,16 +913,16 @@ export default function App() {
                       step="10"
                       value={settings.resultsLimit}
                       onChange={(e) => setSettings(s => ({ ...s, resultsLimit: Number(e.target.value) }))}
-                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-netflix-red"
+                      className="w-full h-1.5 bg-[color:var(--glass-border)] rounded-lg appearance-none cursor-pointer accent-netflix-red"
                     />
-                    <div className="flex justify-between text-[9px] font-bold text-white/20 uppercase tracking-widest">
+                    <div className="flex justify-between text-[9px] font-bold text-[color:var(--text-secondary)] uppercase tracking-widest">
                       <span>Fast (10)</span>
                       <span>Deep (50)</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-10 pt-8 border-t border-white/5">
+                <div className="mt-8 md:mt-10 pt-6 md:pt-8 border-t border-[color:var(--glass-border)]">
                   <button
                     onClick={() => setShowSettings(false)}
                     className="btn-netflix w-full"
@@ -859,6 +935,19 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Theme Toggle Floating Button */}
+      <button
+        onClick={() => setIsDarkMode(!isDarkMode)}
+        className="fixed bottom-6 right-6 z-50 p-4 rounded-full glass-card hover:scale-110 transition-transform flex items-center justify-center border-[color:var(--glass-border)] shadow-2xl"
+        title={`Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`}
+      >
+        {isDarkMode ? (
+          <Sun size={24} className="text-[#FFFFFF]" />
+        ) : (
+          <Moon size={24} className="text-[#000000]" />
+        )}
+      </button>
     </div>
   );
 }

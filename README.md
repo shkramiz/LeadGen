@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# LeadGen
 
-# Run and deploy your AI Studio app
+LeadGen is an AI-powered business lead generation tool that helps you discover and organize business contacts seamlessly.
 
-This contains everything you need to run your app locally.
+## Features
+- Search for businesses across multiple categories and locations (City, Country).
+- Extract and aggregate data like phone numbers, emails, WhatsApp contacts, formatting them efficiently.
+- Sort and export functionality functionality.
+- AI Search mode.
 
-View your app in AI Studio: https://ai.studio/apps/c543f848-f366-42a6-9dca-e3f78edbe723
+## Development
+To start the project in a local environment:
+```bash
+npm install
+npm run dev
+```
 
-## Run Locally
+## Setup & Integrations
+This project uses `@google/genai` to parse search queries intelligently utilizing the Gemini Flash 2.0 experimental model and standard APIs.
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Architecture
+- `src/App.tsx`: Main Application logic, rendering Header, Search bars, and Leads.
+- `src/services/gemini.ts`: AI-powered intelligence.
+- `src/components/`: Reusable complex UI components and icons (e.g. `CustomSelect.tsx`, `icons.tsx`).
+- `src/constants.ts`: System categories and constants.

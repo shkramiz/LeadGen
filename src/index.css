@@ -19,24 +19,59 @@
   --color-brand-950: #4c0519;
 
   --color-netflix-red: #E50914;
-  --color-netflix-black: #000000;
-  --color-netflix-dark: #141414;
-  --color-netflix-gray: #181818;
+  --color-netflix-black: var(--bg-primary);
+  --color-netflix-dark: var(--bg-secondary);
+  --color-netflix-gray: var(--bg-tertiary);
+  --color-dynamic: var(--color-dynamic-base);
+  --color-white: var(--color-dynamic-base);
 }
 
 @layer base {
+  :root {
+    --bg-primary: #FAFAFA;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F1F5F9;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --glass-bg: rgba(0, 0, 0, 0.03);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --input-bg: rgba(255, 255, 255, 1);
+    --btn-ghost-bg: rgba(0, 0, 0, 0.05);
+    --btn-ghost-hover: rgba(0, 0, 0, 0.1);
+    --color-dynamic-base: #000000;
+  }
+
+  .dark {
+    --bg-primary: #000000;
+    --bg-secondary: #141414;
+    --bg-tertiary: #181818;
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255, 255, 255, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --input-bg: rgba(255, 255, 255, 0.1);
+    --btn-ghost-bg: rgba(255, 255, 255, 0.1);
+    --btn-ghost-hover: rgba(255, 255, 255, 0.2);
+    --color-dynamic-base: #FFFFFF;
+  }
+
   body {
-    @apply bg-netflix-black text-white antialiased selection:bg-netflix-red selection:text-white;
+    @apply bg-netflix-black text-[color:var(--text-primary)] antialiased transition-colors duration-300 selection:bg-netflix-red selection:text-[#FFFFFF];
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl;
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    @apply backdrop-blur-xl shadow-2xl rounded-2xl transition-colors duration-300;
   }
   
   .glass-input {
-    @apply w-full px-4 py-3 bg-white/10 border border-white/10 rounded-xl focus:ring-4 focus:ring-netflix-red/20 focus:border-netflix-red/50 outline-none transition-all duration-300 text-white placeholder:text-white/30;
+    background-color: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    @apply w-full px-4 py-3 rounded-xl focus:ring-4 focus:ring-netflix-red/20 focus:border-netflix-red/50 outline-none transition-all duration-300 placeholder:text-[color:var(--text-secondary)] placeholder:opacity-50;
   }
   
   .btn-netflix {
@@ -44,14 +79,28 @@
   }
 
   .btn-ghost {
-    @apply px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 border border-white/10 active:scale-[0.98] disabled:opacity-50;
+    background-color: var(--btn-ghost-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    @apply px-6 py-2.5 font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 hover:bg-[color:var(--btn-ghost-hover)];
   }
 
   .glossy-gradient {
-    @apply bg-gradient-to-b from-white/10 to-transparent;
+    background: linear-gradient(to bottom, var(--glass-border), transparent);
   }
 
   .netflix-shadow {
-    @apply shadow-[0_8px_30px_rgb(0,0,0,0.5)];
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
 }
+
+/* Custom Scrollbar hidden */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
